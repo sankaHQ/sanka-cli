@@ -12,6 +12,8 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
     steps:
       - name: Checkout
@@ -48,8 +50,6 @@ jobs:
 
       - name: Publish to PyPI
         if: env.PYPI_API_TOKEN != ''
-        env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Create GitHub release
