@@ -34,7 +34,7 @@ def _score_command(object_type: str):
         }
         if score_model_id:
             body["score_model_id"] = score_model_id
-        payload = runtime.request_json(state, "POST", "/v1/score", json_body=body)
+        payload = runtime.request_json(state, "POST", "/v2/score", json_body=body)
         runtime.emit_payload(payload, state)
 
     return command
@@ -102,5 +102,5 @@ def ai_enrich_company(
             if value
         }
 
-    payload = runtime.request_json(state, "POST", "/v1/enrich", json_body=body)
+    payload = runtime.request_json(state, "POST", "/v2/enrich", json_body=body)
     runtime.emit_payload(payload, state)

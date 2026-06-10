@@ -52,7 +52,7 @@ brew install sankaHQ/cli/sanka
 Create a Developer API Token in Sanka, then save it locally:
 
 ```bash
-sanka auth login --access-token "<ACCESS_TOKEN>" --refresh-token "<REFRESH_TOKEN>"
+sanka auth login --access-token "<ACCESS_TOKEN>"
 ```
 
 Check the active profile:
@@ -103,7 +103,6 @@ sanka --output json companies list
 - `SANKA_PROFILE`
 - `SANKA_BASE_URL`
 - `SANKA_ACCESS_TOKEN`
-- `SANKA_REFRESH_TOKEN`
 
 These override stored profile values without persisting them.
 

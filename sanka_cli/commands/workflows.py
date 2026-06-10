@@ -21,7 +21,7 @@ def workflows_list(state: CLIState, page: int, limit: int) -> None:
     payload = runtime.request_json(
         state,
         "GET",
-        "/v1/public/workflows",
+        "/v2/public/workflows",
         params={"page": page, "limit": limit},
     )
     runtime.emit_payload(payload, state)
@@ -34,7 +34,7 @@ def workflows_get(state: CLIState, workflow_ref: str) -> None:
     payload = runtime.request_json(
         state,
         "GET",
-        f"/v1/public/workflows/{workflow_ref}",
+        f"/v2/public/workflows/{workflow_ref}",
     )
     runtime.emit_payload(payload, state)
 
@@ -46,7 +46,7 @@ def workflows_create(state: CLIState, data: str) -> None:
     payload = runtime.request_json(
         state,
         "POST",
-        "/v1/public/workflows",
+        "/v2/public/workflows",
         json_body=runtime.parse_json_input(data),
     )
     runtime.emit_payload(payload, state)
@@ -59,7 +59,7 @@ def workflows_update(state: CLIState, data: str) -> None:
     payload = runtime.request_json(
         state,
         "POST",
-        "/v1/public/workflows",
+        "/v2/public/workflows",
         json_body=runtime.parse_json_input(data),
     )
     runtime.emit_payload(payload, state)
@@ -81,7 +81,7 @@ def workflows_run(
     payload = runtime.request_json(
         state,
         "POST",
-        f"/v1/public/workflows/{workflow_ref}/run",
+        f"/v2/public/workflows/{workflow_ref}/run",
     )
     data = payload.get("data", payload)
     if not wait:
@@ -95,7 +95,7 @@ def workflows_run(
         status_payload = runtime.request_json(
             state,
             "GET",
-            f"/v1/public/workflows/runs/{run_id}",
+            f"/v2/public/workflow-runs/{run_id}",
         )
         last_payload = status_payload
         status_data = status_payload.get("data", status_payload)
