@@ -194,12 +194,12 @@ def build_formula(version: str, sha256: str, repo: str, project_root: Path) -> s
         indent="    ",
     )
     resource_sections: list[str] = []
-    if common_resources:
-        resource_sections.append(common_resources)
     if linux_resources:
         resource_sections.append(f"  on_linux do\n{linux_resources}\n  end")
     if macos_resources:
         resource_sections.append(f"  on_macos do\n{macos_resources}\n  end")
+    if common_resources:
+        resource_sections.append(common_resources)
     rendered_resources = ""
     if resource_sections:
         rendered_resources = "\n\n" + "\n\n".join(resource_sections)
