@@ -35,10 +35,10 @@ cli.add_command(profiles)
 cli.add_command(workflows)
 cli.add_command(ai)
 
-attach_resource_group(cli, "companies", "/v1/public/companies")
-attach_resource_group(cli, "contacts", "/v1/public/contacts")
-attach_resource_group(cli, "deals", "/v1/public/deals")
-attach_resource_group(cli, "tickets", "/v1/public/tickets")
+attach_resource_group(cli, "companies", "/v2/public/companies")
+attach_resource_group(cli, "contacts", "/v2/public/contacts")
+attach_resource_group(cli, "deals", "/v2/public/deals")
+attach_resource_group(cli, "tickets", "/v2/public/tickets")
 
 
 def main() -> None:

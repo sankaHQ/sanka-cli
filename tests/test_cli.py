@@ -95,13 +95,12 @@ def test_auth_login_status_and_logout(
     assert ("sanka-cli", "default:refresh_token") not in fake_keyring.values
 
 
-def test_resolve_runtime_prefers_env_tokens_without_keyring(
+def test_resolve_runtime_prefers_env_access_token_without_keyring(
     monkeypatch,
     tmp_path,
 ) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
     monkeypatch.setenv("SANKA_ACCESS_TOKEN", "env-access")
-    monkeypatch.setenv("SANKA_REFRESH_TOKEN", "env-refresh")
 
     def _unexpected_get_tokens(profile_name: str) -> dict[str, str | None]:
         raise AssertionError(f"get_tokens should not run for {profile_name}")
@@ -109,7 +108,7 @@ def test_resolve_runtime_prefers_env_tokens_without_keyring(
     monkeypatch.setattr(cli_config, "get_tokens", _unexpected_get_tokens)
     resolved = cli_config.resolve_runtime()
     assert resolved["access_token"] == "env-access"
-    assert resolved["refresh_token"] == "env-refresh"
+    assert resolved["refresh_token"] is None
     assert resolved["token_source"] == "env"
 
 
@@ -146,8 +145,6 @@ def test_profiles_list_and_use(
             "login",
             "--access-token",
             "access-default",
-            "--refresh-token",
-            "refresh-default",
         ],
         env=env,
     )
@@ -206,7 +203,7 @@ def test_profiles_list_and_use(
             "companies",
             ["list", "--page", "2", "--limit", "10"],
             "GET",
-            "/v1/public/companies",
+            "/v2/public/companies",
             {"page": 2, "limit": 10},
             None,
         ),
@@ -214,7 +211,7 @@ def test_profiles_list_and_use(
             "companies",
             ["get", "company-1", "--external-id", "COMP-1"],
             "GET",
-            "/v1/public/companies/company-1",
+            "/v2/public/companies/company-1",
             {"external_id": "COMP-1"},
             None,
         ),
@@ -222,7 +219,7 @@ def test_profiles_list_and_use(
             "companies",
             ["create", "--data", '{"name":"Acme"}'],
             "POST",
-            "/v1/public/companies",
+            "/v2/public/companies",
             None,
             {"name": "Acme"},
         ),
@@ -237,7 +234,7 @@ def test_profiles_list_and_use(
                 "COMP-1",
             ],
             "PUT",
-            "/v1/public/companies/company-1",
+            "/v2/public/companies/company-1",
             {"external_id": "COMP-1"},
             {"name": "Acme 2"},
         ),
@@ -245,7 +242,7 @@ def test_profiles_list_and_use(
             "companies",
             ["delete", "company-1", "--external-id", "COMP-1"],
             "DELETE",
-            "/v1/public/companies/company-1",
+            "/v2/public/companies/company-1",
             {"external_id": "COMP-1"},
             None,
         ),
@@ -253,7 +250,7 @@ def test_profiles_list_and_use(
             "contacts",
             ["list"],
             "GET",
-            "/v1/public/contacts",
+            "/v2/public/contacts",
             {"page": 1, "limit": 50},
             None,
         ),
@@ -261,7 +258,7 @@ def test_profiles_list_and_use(
             "contacts",
             ["get", "contact-1"],
             "GET",
-            "/v1/public/contacts/contact-1",
+            "/v2/public/contacts/contact-1",
             None,
             None,
         ),
@@ -269,7 +266,7 @@ def test_profiles_list_and_use(
             "contacts",
             ["create", "--data", '{"first_name":"Ada"}'],
             "POST",
-            "/v1/public/contacts",
+            "/v2/public/contacts",
             None,
             {"first_name": "Ada"},
         ),
@@ -277,7 +274,7 @@ def test_profiles_list_and_use(
             "contacts",
             ["update", "contact-1", "--data", '{"first_name":"Ada 2"}'],
             "PUT",
-            "/v1/public/contacts/contact-1",
+            "/v2/public/contacts/contact-1",
             None,
             {"first_name": "Ada 2"},
         ),
@@ -285,17 +282,17 @@ def test_profiles_list_and_use(
             "contacts",
             ["delete", "contact-1"],
             "DELETE",
-            "/v1/public/contacts/contact-1",
+            "/v2/public/contacts/contact-1",
             None,
             None,
         ),
-        ("deals", ["list"], "GET", "/v1/public/deals", {"page": 1, "limit": 50}, None),
-        ("deals", ["get", "deal-1"], "GET", "/v1/public/deals/deal-1", None, None),
+        ("deals", ["list"], "GET", "/v2/public/deals", {"page": 1, "limit": 50}, None),
+        ("deals", ["get", "deal-1"], "GET", "/v2/public/deals/deal-1", None, None),
         (
             "deals",
             ["create", "--data", '{"title":"Deal"}'],
             "POST",
-            "/v1/public/deals",
+            "/v2/public/deals",
             None,
             {"title": "Deal"},
         ),
@@ -303,7 +300,7 @@ def test_profiles_list_and_use(
             "deals",
             ["update", "deal-1", "--data", '{"title":"Deal 2"}'],
             "PUT",
-            "/v1/public/deals/deal-1",
+            "/v2/public/deals/deal-1",
             None,
             {"title": "Deal 2"},
         ),
@@ -311,7 +308,7 @@ def test_profiles_list_and_use(
             "deals",
             ["delete", "deal-1"],
             "DELETE",
-            "/v1/public/deals/deal-1",
+            "/v2/public/deals/deal-1",
             None,
             None,
         ),
@@ -319,7 +316,7 @@ def test_profiles_list_and_use(
             "tickets",
             ["list"],
             "GET",
-            "/v1/public/tickets",
+            "/v2/public/tickets",
             {"page": 1, "limit": 50},
             None,
         ),
@@ -327,7 +324,7 @@ def test_profiles_list_and_use(
             "tickets",
             ["get", "ticket-1"],
             "GET",
-            "/v1/public/tickets/ticket-1",
+            "/v2/public/tickets/ticket-1",
             None,
             None,
         ),
@@ -335,7 +332,7 @@ def test_profiles_list_and_use(
             "tickets",
             ["create", "--data", '{"external_id":"T-1","title":"Ticket"}'],
             "POST",
-            "/v1/public/tickets",
+            "/v2/public/tickets",
             None,
             {"external_id": "T-1", "title": "Ticket"},
         ),
@@ -343,7 +340,7 @@ def test_profiles_list_and_use(
             "tickets",
             ["update", "ticket-1", "--data", '{"title":"Ticket 2"}'],
             "PUT",
-            "/v1/public/tickets/ticket-1",
+            "/v2/public/tickets/ticket-1",
             None,
             {"title": "Ticket 2"},
         ),
@@ -351,7 +348,7 @@ def test_profiles_list_and_use(
             "tickets",
             ["delete", "ticket-1"],
             "DELETE",
-            "/v1/public/tickets/ticket-1",
+            "/v2/public/tickets/ticket-1",
             None,
             None,
         ),
@@ -405,7 +402,7 @@ def test_workflow_commands_route_expected_requests_and_wait(
     def _fake_request(_state, method, path, *, params=None, json_body=None):
         del params, json_body
         calls.append((method, path))
-        if path == "/v1/public/workflows":
+        if path == "/v2/public/workflows":
             return {"ok": True}
         return responses.pop(0)
 
@@ -455,11 +452,11 @@ def test_workflow_commands_route_expected_requests_and_wait(
     )
     assert run_result.exit_code == 0, run_result.output
     assert calls == [
-        ("POST", "/v1/public/workflows"),
-        ("POST", "/v1/public/workflows"),
-        ("POST", "/v1/public/workflows/WF-1/run"),
-        ("GET", "/v1/public/workflows/runs/run-1"),
-        ("GET", "/v1/public/workflows/runs/run-1"),
+        ("POST", "/v2/public/workflows"),
+        ("POST", "/v2/public/workflows"),
+        ("POST", "/v2/public/workflows/WF-1/run"),
+        ("GET", "/v2/public/workflow-runs/run-1"),
+        ("GET", "/v2/public/workflow-runs/run-1"),
     ]
 
 
@@ -497,7 +494,7 @@ def test_ai_score_commands_build_payloads(
     assert result.exit_code == 0, result.output
     assert captured == {
         "method": "POST",
-        "path": "/v1/score",
+        "path": "/v2/score",
         "json_body": expected_body,
     }
 
@@ -514,7 +511,7 @@ def test_ai_enrich_company_builds_record_and_seed_payloads(
     def _fake_request(_state, method, path, *, params=None, json_body=None):
         del params
         assert method == "POST"
-        assert path == "/v1/enrich"
+        assert path == "/v2/enrich"
         captured_bodies.append(json_body or {})
         return {"ok": True}
 

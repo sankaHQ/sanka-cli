@@ -57,22 +57,9 @@ def build_client(state: CLIState) -> SankaApiClient:
             "No access token configured. Run `sanka auth login` first."
         )
 
-    def _persist_tokens(access: str, refresh: str) -> None:
-        store_tokens(
-            runtime["profile_name"],
-            access_token=access,
-            refresh_token=refresh,
-        )
-
-    token_updater = None
-    if runtime["token_source"] != "env":
-        token_updater = _persist_tokens
-
     return SankaApiClient(
         base_url=runtime["base_url"],
         access_token=access_token,
-        refresh_token=runtime["refresh_token"],
-        token_updater=token_updater,
     )
 
 

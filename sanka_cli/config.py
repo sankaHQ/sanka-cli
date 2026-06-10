@@ -73,7 +73,7 @@ def _get_keyring_password(profile_name: str, token_kind: str) -> str | None:
         raise CredentialStoreError(
             "Sanka CLI couldn't access the system keychain. "
             "Allow keychain access for the installed Python runtime, or run commands "
-            "with SANKA_ACCESS_TOKEN and SANKA_REFRESH_TOKEN."
+            "with SANKA_ACCESS_TOKEN."
         ) from exc
 
 
@@ -81,7 +81,7 @@ def _set_keyring_password(profile_name: str, token_kind: str, value: str) -> Non
     if keyring is None:
         raise CredentialStoreError(
             "Sanka CLI couldn't access a supported system keychain. "
-            "Use SANKA_ACCESS_TOKEN and SANKA_REFRESH_TOKEN for non-persistent auth."
+            "Use SANKA_ACCESS_TOKEN for non-persistent auth."
         )
     try:
         keyring.set_password(
@@ -93,7 +93,7 @@ def _set_keyring_password(profile_name: str, token_kind: str, value: str) -> Non
         raise CredentialStoreError(
             "Sanka CLI couldn't store tokens in the system keychain. "
             "Allow keychain access for the installed Python runtime, or use "
-            "SANKA_ACCESS_TOKEN and SANKA_REFRESH_TOKEN for non-persistent auth."
+            "SANKA_ACCESS_TOKEN for non-persistent auth."
         ) from exc
 
 
@@ -209,9 +209,7 @@ def list_profiles() -> list[dict[str, Any]]:
     for profile_name in sorted(config["profiles"]):
         profile = config["profiles"][profile_name] or {}
         try:
-            has_access_token = bool(
-                _get_keyring_password(profile_name, "access_token")
-            )
+            has_access_token = bool(_get_keyring_password(profile_name, "access_token"))
             has_refresh_token = bool(
                 _get_keyring_password(profile_name, "refresh_token")
             )
@@ -236,11 +234,14 @@ def store_tokens(
     profile_name: str,
     *,
     access_token: str,
-    refresh_token: str,
+    refresh_token: str | None = None,
 ) -> None:
     normalized_profile_name = _normalize_profile_name(profile_name)
     _set_keyring_password(normalized_profile_name, "access_token", access_token)
-    _set_keyring_password(normalized_profile_name, "refresh_token", refresh_token)
+    if refresh_token:
+        _set_keyring_password(normalized_profile_name, "refresh_token", refresh_token)
+    else:
+        _delete_keyring_password(normalized_profile_name, "refresh_token")
 
 
 def clear_tokens(profile_name: str) -> None:
@@ -268,10 +269,9 @@ def resolve_runtime(
     resolved_profile_name = resolve_profile_name(profile_name)
     profile = get_profile(resolved_profile_name)
     env_access_token = os.environ.get("SANKA_ACCESS_TOKEN")
-    env_refresh_token = os.environ.get("SANKA_REFRESH_TOKEN")
     env_base_url = os.environ.get("SANKA_BASE_URL")
     stored_tokens = {"access_token": None, "refresh_token": None}
-    if not (env_access_token or env_refresh_token):
+    if not env_access_token:
         stored_tokens = get_tokens(resolved_profile_name)
 
     return {
@@ -280,6 +280,6 @@ def resolve_runtime(
             base_url_override or env_base_url or profile["base_url"] or DEFAULT_BASE_URL
         ).rstrip("/"),
         "access_token": env_access_token or stored_tokens["access_token"],
-        "refresh_token": env_refresh_token or stored_tokens["refresh_token"],
-        "token_source": "env" if env_access_token or env_refresh_token else "keyring",
+        "refresh_token": stored_tokens["refresh_token"],
+        "token_source": "env" if env_access_token else "keyring",
     }

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -36,14 +35,10 @@ class SankaApiClient:
         *,
         base_url: str,
         access_token: str,
-        refresh_token: str | None = None,
-        token_updater: Callable[[str, str], None] | None = None,
         timeout: float = 30.0,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.token_updater = token_updater
         self.client = httpx.Client(base_url=self.base_url, timeout=timeout)
 
     def close(self) -> None:
@@ -79,24 +74,6 @@ class SankaApiClient:
             payload=payload if isinstance(payload, dict) else {},
         )
 
-    def refresh_session(self) -> None:
-        if not self.refresh_token:
-            raise APIError(status_code=401, message="refresh_token is required")
-
-        response = self.client.post(
-            "/v1/public/auth/refresh",
-            headers=self._headers(include_auth=False),
-            json={"refresh_token": self.refresh_token},
-        )
-        if response.status_code >= 400:
-            self._raise_for_response(response)
-
-        payload = response.json()["data"]
-        self.access_token = payload["access_token"]
-        self.refresh_token = payload["refresh_token"]
-        if self.token_updater:
-            self.token_updater(self.access_token, self.refresh_token)
-
     def request_json(
         self,
         method: str,
@@ -113,15 +90,7 @@ class SankaApiClient:
             params=params,
             json=json_body,
         )
-        if response.status_code == 401 and allow_refresh and self.refresh_token:
-            self.refresh_session()
-            return self.request_json(
-                method,
-                path,
-                params=params,
-                json_body=json_body,
-                allow_refresh=False,
-            )
+        _ = allow_refresh
         if response.status_code >= 400:
             self._raise_for_response(response)
 

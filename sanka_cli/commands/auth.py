@@ -14,14 +14,18 @@ def auth() -> None:
 
 @auth.command("login")
 @click.option("--access-token", required=True, help="Developer API access token.")
-@click.option("--refresh-token", required=True, help="Developer API refresh token.")
+@click.option(
+    "--refresh-token",
+    default=None,
+    help="Deprecated legacy refresh token. V2 public API uses bearer tokens.",
+)
 @click.option("--profile", "profile_name", default=None, help="Profile name to save.")
 @click.option("--base-url", default=None, help="API base URL to store for the profile.")
 @click.pass_obj
 def auth_login(
     state: CLIState,
     access_token: str,
-    refresh_token: str,
+    refresh_token: str | None,
     profile_name: str | None,
     base_url: str | None,
 ) -> None:
@@ -56,7 +60,7 @@ def auth_status(state: CLIState) -> None:
         )
     except runtime.CredentialStoreError as exc:
         raise click.ClickException(str(exc)) from exc
-    payload = runtime.request_json(state, "GET", "/v1/public/auth/whoami")
+    payload = runtime.request_json(state, "GET", "/v2/public/auth/whoami")
     data = payload.get("data", payload)
     data["profile"] = resolved["profile_name"]
     data["base_url"] = resolved["base_url"]

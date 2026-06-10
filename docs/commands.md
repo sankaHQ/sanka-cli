@@ -3,7 +3,7 @@
 ## Authentication
 
 ```bash
-sanka auth login --access-token "<ACCESS_TOKEN>" --refresh-token "<REFRESH_TOKEN>"
+sanka auth login --access-token "<ACCESS_TOKEN>"
 sanka auth status
 sanka auth logout
 ```
