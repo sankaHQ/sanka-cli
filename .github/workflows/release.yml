@@ -12,8 +12,9 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    env:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    environment:
+      name: pypi
+      url: https://pypi.org/p/sanka-cli
 
     steps:
       - name: Checkout
@@ -49,7 +50,6 @@ jobs:
             --output packaging/homebrew/sanka.rb
 
       - name: Publish to PyPI
-        if: env.PYPI_API_TOKEN != ''
         uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Create GitHub release
