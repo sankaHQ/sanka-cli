@@ -1,28 +1,31 @@
 # Install
 
-## From GitHub
+## From PyPI
 
-This is the most direct install path before the first packaged release:
+This is the default install path:
 
 ```bash
-uv tool install "git+https://github.com/sankaHQ/sanka-cli.git"
+uv tool install sanka-cli
 ```
 
 ## Bootstrap Script
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sankaHQ/sanka-cli/main/scripts/install.sh | sh
+curl -fsSLO https://raw.githubusercontent.com/sankaHQ/sanka-cli/v0.1.3/scripts/install.sh
+sh install.sh
 ```
 
-The script tries PyPI first and falls back to the public GitHub repo if the package is
-not published yet.
+The script requires `uv` to be installed already and installs the pinned PyPI
+release by default. If a fallback is needed, set `SANKA_CLI_FALLBACK_SPEC` to an
+exact version or pinned Git ref, such as `sanka-cli==0.1.3` or
+`git+https://github.com/sankaHQ/sanka-cli.git@v0.1.3`.
 
-## From PyPI
+## From GitHub
 
-After the first packaged release:
+Use an immutable tag, not the moving default branch:
 
 ```bash
-uv tool install sanka-cli
+uv tool install "git+https://github.com/sankaHQ/sanka-cli.git@v0.1.3"
 ```
 
 ## Homebrew

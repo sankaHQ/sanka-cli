@@ -11,22 +11,23 @@ The CLI keeps business logic on the server. It handles:
 
 ## Install
 
-From GitHub:
-
-```bash
-uv tool install "git+https://github.com/sankaHQ/sanka-cli.git"
-```
-
-Bootstrap script:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/sankaHQ/sanka-cli/main/scripts/install.sh | sh
-```
-
-From PyPI after the first package release:
+From PyPI:
 
 ```bash
 uv tool install sanka-cli
+```
+
+Bootstrap script from a pinned release tag:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/sankaHQ/sanka-cli/v0.1.3/scripts/install.sh
+sh install.sh
+```
+
+From a pinned GitHub release tag:
+
+```bash
+uv tool install "git+https://github.com/sankaHQ/sanka-cli.git@v0.1.3"
 ```
 
 Homebrew support is published through
