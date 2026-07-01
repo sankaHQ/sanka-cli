@@ -9,3 +9,5 @@ dist/
 *.egg-info/
 tracking/
 uv.lock.bak
+
+.lavish/
