@@ -74,6 +74,28 @@ class SankaApiClient:
             payload=payload if isinstance(payload, dict) else {},
         )
 
+    def request_bytes(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+    ) -> tuple[bytes, dict[str, str]]:
+        """Fetch a non-JSON body (currently only the Custom Code bundle download).
+
+        Returns headers alongside the payload so the caller can verify the digest the
+        server reports without a second request.
+        """
+        response = self.client.request(
+            method.upper(),
+            path,
+            headers=self._headers(),
+            params=params,
+        )
+        if response.status_code >= 400:
+            self._raise_for_response(response)
+        return response.content, dict(response.headers)
+
     def request_json(
         self,
         method: str,

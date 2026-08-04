@@ -81,6 +81,43 @@ sanka workflows run <workflow-ref>
 sanka workflows run <workflow-ref> --wait
 ```
 
+Custom Code — write a workflow action in JavaScript or Python, keep it in your own
+repository, and push versions to Sanka:
+
+```bash
+sanka code init --slug enrich-company --runtime node
+sanka code create
+sanka code push --activate -m "add tier logic"
+```
+
+Your repository is the source of truth. Versions are immutable and content-addressed,
+so pushing unchanged code returns the version that already exists — safe to run on
+every CI merge. Rolling back is a pointer move, not a redeploy:
+
+```bash
+sanka code versions enrich-company
+sanka code rollback enrich-company          # or: deploy --version 4
+```
+
+`pull` writes a deployed version back to disk and `diff` reports whether your working
+directory matches what is live. `diff` exits non-zero when they differ, which makes it
+usable as a CI drift check:
+
+```bash
+sanka code pull enrich-company --dir ./functions/enrich
+sanka code diff --dir ./functions/enrich
+```
+
+Secrets are per-function and never readable back — `list` shows only a masked suffix:
+
+```bash
+sanka code secrets set enrich-company CLEARBIT_API_KEY   # prompts, no echo
+sanka code secrets list enrich-company
+```
+
+Files are excluded from a push by `.sankaignore`; `.git`, `node_modules`,
+`__pycache__`, `.venv`, build output, and `.env` are excluded by default.
+
 AI helpers:
 
 ```bash
