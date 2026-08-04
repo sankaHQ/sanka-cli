@@ -93,6 +93,23 @@ def request_json(
         client.close()
 
 
+def request_bytes(
+    state: CLIState,
+    method: str,
+    path: str,
+    *,
+    params: dict[str, Any] | None = None,
+) -> tuple[bytes, dict[str, str]]:
+    client = build_client(state)
+    try:
+        return client.request_bytes(method, path, params=params)
+    except APIError as exc:
+        handle_api_error(exc)
+        raise
+    finally:
+        client.close()
+
+
 __all__ = [
     "TERMINAL_WORKFLOW_RUN_STATUSES",
     "CLIState",
@@ -100,6 +117,7 @@ __all__ = [
     "emit_payload",
     "list_profiles",
     "parse_json_input",
+    "request_bytes",
     "request_json",
     "resolve_runtime",
     "set_active_profile",
