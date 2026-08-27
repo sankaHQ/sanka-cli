@@ -44,7 +44,23 @@ def test_auth_login_status_and_logout(
     tmp_path,
 ) -> None:
     env = {"XDG_CONFIG_HOME": str(tmp_path)}
+    verified: dict[str, str] = {}
 
+    def _fake_verify(*, base_url: str, access_token: str):
+        verified["base_url"] = base_url
+        verified["access_token"] = access_token
+        return (
+            {
+                "workspace_name": "Acme",
+                "workspace_code": "12345678",
+                "email": "dev@example.com",
+                "token_name": "CLI",
+                "permission_level": "admin",
+            },
+            None,
+        )
+
+    monkeypatch.setattr("sanka_cli.runtime.verify_access_token", _fake_verify)
     login_result = runner.invoke(
         cli,
         [
@@ -62,6 +78,17 @@ def test_auth_login_status_and_logout(
         env=env,
     )
     assert login_result.exit_code == 0, login_result.output
+    assert verified == {
+        "base_url": "https://cli.example.com",
+        "access_token": "access-1",
+    }
+    login_payload = json.loads(login_result.output)
+    assert login_payload["message"] == "logged_in"
+    assert login_payload["workspace"] == "Acme (12345678)"
+    assert login_payload["user"] == "dev@example.com"
+    assert login_payload["token"] == "CLI"
+    assert login_payload["permission_level"] == "admin"
+    assert "warning" not in login_payload
     assert fake_keyring.values[("sanka-cli", "default:access_token")] == "access-1"
     assert fake_keyring.values[("sanka-cli", "default:refresh_token")] == "refresh-1"
 
@@ -128,13 +155,72 @@ def test_auth_status_surfaces_keychain_error_cleanly(
     assert "Keychain access is blocked" in result.output
 
 
+def test_auth_login_rejected_token_saves_nothing(
+    runner: CliRunner,
+    fake_keyring: _FakeKeyring,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    from sanka_cli import runtime as cli_runtime
+
+    def _fake_verify(*, base_url: str, access_token: str):
+        del access_token
+        raise cli_runtime.TokenVerificationError(
+            f"{base_url} rejected this access token (HTTP 401: Unauthorized).",
+            status_code=401,
+        )
+
+    monkeypatch.setattr("sanka_cli.runtime.verify_access_token", _fake_verify)
+    result = runner.invoke(
+        cli,
+        ["--output", "json", "auth", "login", "--access-token", "bad-token"],
+        env={"XDG_CONFIG_HOME": str(tmp_path)},
+    )
+    assert result.exit_code == 1
+    assert "rejected this access token" in result.output
+    assert "Nothing was saved" in result.output
+    assert fake_keyring.values == {}
+    assert not (tmp_path / "sanka" / "config.toml").exists()
+
+
+def test_auth_login_unreachable_api_saves_with_warning(
+    runner: CliRunner,
+    fake_keyring: _FakeKeyring,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setattr(
+        "sanka_cli.runtime.verify_access_token",
+        lambda **_kwargs: (
+            None,
+            "token saved without verification: could not reach "
+            "https://api.sanka.com (ConnectError)",
+        ),
+    )
+    result = runner.invoke(
+        cli,
+        ["--output", "json", "auth", "login", "--access-token", "access-1"],
+        env={"XDG_CONFIG_HOME": str(tmp_path)},
+    )
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["message"] == "saved"
+    assert "could not reach" in payload["warning"]
+    assert fake_keyring.values[("sanka-cli", "default:access_token")] == "access-1"
+
+
 def test_profiles_list_and_use(
     runner: CliRunner,
     fake_keyring: _FakeKeyring,
+    monkeypatch,
     tmp_path,
 ) -> None:
     _ = fake_keyring
     env = {"XDG_CONFIG_HOME": str(tmp_path)}
+    monkeypatch.setattr(
+        "sanka_cli.runtime.verify_access_token",
+        lambda **_kwargs: ({"workspace_name": "Acme"}, None),
+    )
 
     result_default = runner.invoke(
         cli,
@@ -571,3 +657,117 @@ def test_ai_enrich_company_builds_record_and_seed_payloads(
             },
         },
     ]
+
+
+def test_api_error_parses_v2_error_envelope() -> None:
+    import httpx
+
+    from sanka_cli.client import APIError, SankaApiClient
+
+    client = SankaApiClient(base_url="https://cli.example.com", access_token="t")
+    response = httpx.Response(
+        401,
+        json={
+            "success": False,
+            "error": {
+                "code": "INVALID_AUTHENTICATION",
+                "message": "Invalid authentication credentials",
+                "details": None,
+            },
+            "meta": {"ctx_id": "ctx_123"},
+        },
+    )
+    with pytest.raises(APIError) as excinfo:
+        client._raise_for_response(response)
+    client.close()
+    assert excinfo.value.message == "Invalid authentication credentials"
+    assert excinfo.value.ctx_id == "ctx_123"
+    assert excinfo.value.display_message() == (
+        "Invalid authentication credentials (ctx_id=ctx_123)"
+    )
+
+
+class _FakeVerifyClient:
+    outcome: object = None
+    instances: list[_FakeVerifyClient] = []
+
+    def __init__(self, *, base_url: str, access_token: str) -> None:
+        self.base_url = base_url
+        self.access_token = access_token
+        self.closed = False
+        type(self).instances.append(self)
+
+    def request_json(self, method: str, path: str, **_kwargs):
+        assert (method, path) == ("GET", "/v2/public/auth/whoami")
+        outcome = type(self).outcome
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    def close(self) -> None:
+        self.closed = True
+
+
+@pytest.fixture
+def fake_verify_client(monkeypatch) -> type[_FakeVerifyClient]:
+    from sanka_cli import runtime as cli_runtime
+
+    _FakeVerifyClient.instances = []
+    monkeypatch.setattr(cli_runtime, "SankaApiClient", _FakeVerifyClient)
+    return _FakeVerifyClient
+
+
+def test_verify_access_token_returns_identity(fake_verify_client) -> None:
+    from sanka_cli import runtime as cli_runtime
+
+    fake_verify_client.outcome = {"data": {"workspace_name": "Acme"}}
+    identity, warning = cli_runtime.verify_access_token(
+        base_url="https://cli.example.com",
+        access_token="access-1",
+    )
+    assert identity == {"workspace_name": "Acme"}
+    assert warning is None
+    assert fake_verify_client.instances[0].closed
+
+
+def test_verify_access_token_maps_auth_rejection(fake_verify_client) -> None:
+    from sanka_cli import runtime as cli_runtime
+    from sanka_cli.client import APIError
+
+    fake_verify_client.outcome = APIError(status_code=401, message="Unauthorized")
+    with pytest.raises(cli_runtime.TokenVerificationError) as excinfo:
+        cli_runtime.verify_access_token(
+            base_url="https://cli.example.com",
+            access_token="bad-token",
+        )
+    assert excinfo.value.status_code == 401
+    assert "rejected this access token" in str(excinfo.value)
+    assert fake_verify_client.instances[0].closed
+
+
+def test_verify_access_token_warns_on_server_error(fake_verify_client) -> None:
+    from sanka_cli import runtime as cli_runtime
+    from sanka_cli.client import APIError
+
+    fake_verify_client.outcome = APIError(status_code=503, message="Unavailable")
+    identity, warning = cli_runtime.verify_access_token(
+        base_url="https://cli.example.com",
+        access_token="access-1",
+    )
+    assert identity is None
+    assert "HTTP 503" in warning
+
+
+def test_verify_access_token_warns_when_unreachable(fake_verify_client) -> None:
+    import httpx
+
+    from sanka_cli import runtime as cli_runtime
+
+    fake_verify_client.outcome = httpx.ConnectError("connection refused")
+    identity, warning = cli_runtime.verify_access_token(
+        base_url="https://cli.example.com",
+        access_token="access-1",
+    )
+    assert identity is None
+    assert "could not reach https://cli.example.com" in warning
+    assert "ConnectError" in warning
