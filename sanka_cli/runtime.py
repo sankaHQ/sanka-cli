@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import click
+import httpx
 
 from sanka_cli.client import APIError, SankaApiClient
 from sanka_cli.config import (
@@ -26,6 +27,54 @@ TERMINAL_WORKFLOW_RUN_STATUSES = {
     "skipped",
     "stop_trigger",
 }
+
+
+class TokenVerificationError(Exception):
+    """The API explicitly rejected the supplied access token."""
+
+    def __init__(self, message: str, *, status_code: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def verify_access_token(
+    *,
+    base_url: str,
+    access_token: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Confirm an access token against whoami before it is persisted.
+
+    Returns (identity, None) when the token is verified, or (None, warning)
+    when the API could not be reached or errored without rejecting the token —
+    so login still works offline. Raises TokenVerificationError when the API
+    rejects the token (401/403).
+    """
+    client = SankaApiClient(base_url=base_url, access_token=access_token)
+    try:
+        payload = client.request_json("GET", "/v2/public/auth/whoami")
+    except APIError as exc:
+        if exc.status_code in (401, 403):
+            raise TokenVerificationError(
+                f"{base_url} rejected this access token "
+                f"(HTTP {exc.status_code}: {exc.display_message()}).",
+                status_code=exc.status_code,
+            ) from exc
+        return (
+            None,
+            f"token saved without verification: {base_url} responded "
+            f"HTTP {exc.status_code}",
+        )
+    except httpx.HTTPError as exc:
+        return (
+            None,
+            f"token saved without verification: could not reach {base_url} "
+            f"({exc.__class__.__name__})",
+        )
+    finally:
+        client.close()
+
+    data = payload.get("data", payload)
+    return (data if isinstance(data, dict) else {}), None
 
 
 def parse_json_input(raw: str | None) -> dict[str, Any]:
@@ -113,6 +162,7 @@ def request_bytes(
 __all__ = [
     "TERMINAL_WORKFLOW_RUN_STATUSES",
     "CLIState",
+    "TokenVerificationError",
     "clear_tokens",
     "emit_payload",
     "list_profiles",
@@ -123,4 +173,5 @@ __all__ = [
     "set_active_profile",
     "store_tokens",
     "upsert_profile",
+    "verify_access_token",
 ]

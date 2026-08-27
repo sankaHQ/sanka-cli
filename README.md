@@ -50,7 +50,10 @@ brew install sankaHQ/cli/sanka
 
 ## Authenticate
 
-Create a Developer API Token in Sanka, then save it locally:
+Create a Developer API Token in Sanka, then save it locally. Login verifies the
+token against the API and prints the workspace and user it belongs to; a
+rejected token is not saved. If the API is unreachable, the token is saved with
+a warning so offline setup still works.
 
 ```bash
 sanka auth login --access-token "<ACCESS_TOKEN>"

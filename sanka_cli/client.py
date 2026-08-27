@@ -62,8 +62,17 @@ class SankaApiClient:
         message = ""
         ctx_id = None
         if isinstance(payload, dict):
-            message = str(payload.get("message") or payload.get("detail") or "").strip()
-            ctx_id = payload.get("ctx_id")
+            error = payload.get("error")
+            error = error if isinstance(error, dict) else {}
+            meta = payload.get("meta")
+            meta = meta if isinstance(meta, dict) else {}
+            message = str(
+                payload.get("message")
+                or payload.get("detail")
+                or error.get("message")
+                or ""
+            ).strip()
+            ctx_id = payload.get("ctx_id") or meta.get("ctx_id")
         if not message:
             message = response.text.strip() or f"HTTP {response.status_code}"
 

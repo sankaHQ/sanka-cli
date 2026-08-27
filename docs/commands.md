@@ -2,6 +2,9 @@
 
 ## Authentication
 
+`auth login` verifies the token against the API before saving it and prints the
+workspace, user, and token name on success.
+
 ```bash
 sanka auth login --access-token "<ACCESS_TOKEN>"
 sanka auth status
