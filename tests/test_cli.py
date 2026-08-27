@@ -9,6 +9,18 @@ from sanka_cli import config as cli_config
 from sanka_cli.main import cli
 
 
+def test_version_matches_pyproject() -> None:
+    import tomllib
+    from pathlib import Path
+
+    from sanka_cli import __version__
+
+    pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    with pyproject.open("rb") as handle:
+        project_version = tomllib.load(handle)["project"]["version"]
+    assert __version__ == project_version
+
+
 class _FakeKeyring:
     def __init__(self) -> None:
         self.values: dict[tuple[str, str], str] = {}
