@@ -9,6 +9,82 @@ from sanka_cli import config as cli_config
 from sanka_cli.main import cli
 
 
+def test_migration_passthrough_delegates_in_process(
+    runner: CliRunner, monkeypatch
+) -> None:
+    from sanka_cli.commands import migrate as migrate_module
+
+    captured: dict[str, object] = {}
+
+    def _fake_main(argv):
+        captured["argv"] = argv
+        return 0
+
+    monkeypatch.setattr(migrate_module, "_load_migrate_main", lambda: _fake_main)
+    result = runner.invoke(cli, ["scan", ".", "--json"])
+    assert result.exit_code == 0, result.output
+    assert captured["argv"] == ["scan", ".", "--json"]
+
+
+def test_migration_passthrough_forwards_help(runner: CliRunner, monkeypatch) -> None:
+    from sanka_cli.commands import migrate as migrate_module
+
+    captured: dict[str, object] = {}
+
+    def _fake_main(argv):
+        captured["argv"] = argv
+        return 0
+
+    monkeypatch.setattr(migrate_module, "_load_migrate_main", lambda: _fake_main)
+    result = runner.invoke(cli, ["plan", "--help"])
+    assert result.exit_code == 0, result.output
+    assert captured["argv"] == ["plan", "--help"]
+
+
+def test_migration_passthrough_execs_path_binary(
+    runner: CliRunner, monkeypatch
+) -> None:
+    from sanka_cli.commands import migrate as migrate_module
+
+    captured: dict[str, object] = {}
+
+    def _fake_execv(executable, argv):
+        captured["executable"] = executable
+        captured["argv"] = argv
+        raise SystemExit(0)
+
+    monkeypatch.setattr(migrate_module, "_load_migrate_main", lambda: None)
+    monkeypatch.setattr(
+        migrate_module.shutil, "which", lambda _name: "/fake/bin/sanka-migrate"
+    )
+    monkeypatch.setattr(migrate_module.os, "execv", _fake_execv)
+    result = runner.invoke(cli, ["apply", "--to", "fastapi"])
+    assert result.exit_code == 0, result.output
+    assert captured["executable"] == "/fake/bin/sanka-migrate"
+    assert captured["argv"] == ["/fake/bin/sanka-migrate", "apply", "--to", "fastapi"]
+
+
+def test_migration_passthrough_hints_when_missing(
+    runner: CliRunner, monkeypatch
+) -> None:
+    from sanka_cli.commands import migrate as migrate_module
+
+    monkeypatch.setattr(migrate_module, "_load_migrate_main", lambda: None)
+    monkeypatch.setattr(migrate_module.shutil, "which", lambda _name: None)
+    result = runner.invoke(cli, ["verify"])
+    assert result.exit_code == 1
+    assert "uv tool install sanka-migrate" in result.output
+
+
+def test_migration_commands_do_not_collide_with_api_commands() -> None:
+    from sanka_cli.commands.migrate import MIGRATION_COMMANDS
+
+    registered = set(cli.commands)
+    assert set(MIGRATION_COMMANDS) <= registered
+    api_commands = registered - set(MIGRATION_COMMANDS)
+    assert set(MIGRATION_COMMANDS).isdisjoint(api_commands)
+
+
 def test_version_matches_pyproject() -> None:
     import tomllib
     from pathlib import Path

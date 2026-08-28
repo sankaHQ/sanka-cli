@@ -5,6 +5,7 @@ import click
 from sanka_cli.commands.ai import ai
 from sanka_cli.commands.auth import auth
 from sanka_cli.commands.code import code
+from sanka_cli.commands.migrate import register_migration_passthroughs
 from sanka_cli.commands.profiles import profiles
 from sanka_cli.commands.resources import attach_resource_group
 from sanka_cli.commands.workflows import workflows
@@ -41,6 +42,8 @@ attach_resource_group(cli, "companies", "/v2/public/companies")
 attach_resource_group(cli, "contacts", "/v2/public/contacts")
 attach_resource_group(cli, "deals", "/v2/public/deals")
 attach_resource_group(cli, "tickets", "/v2/public/tickets")
+
+register_migration_passthroughs(cli)
 
 
 def main() -> None:
