@@ -4,16 +4,17 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sanka-cli"
-version = "0.1.6"
+version = "0.1.7"
 description = "Public command-line interface for Sanka"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = "MIT"
 authors = [
   { name = "Sanka" },
 ]
 dependencies = [
   "click>=8.1.8",
+  "sanka-migrate>=0.1.0a7",
   "httpx>=0.27.2",
   "keyring>=25.6.0",
   "platformdirs>=4.3.6",
@@ -42,7 +43,7 @@ packages = ["sanka_cli"]
 testpaths = ["tests"]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "ARG"]

@@ -97,6 +97,14 @@ def _load_direct_dependencies(project_root: Path) -> tuple[LockedDependency, ...
     return tuple(direct_dependencies)
 
 
+# The migration engine ships as a PyPI dependency but is excluded from the
+# Homebrew formula: its subtree (psycopg[binary], clickhouse-connect, fastapi)
+# needs wheels or native toolchains that brew's sdist-built resources cannot
+# provide. Brew users add it with `uv tool install sanka-migrate`; the CLI's
+# PATH-exec delegation picks it up.
+HOMEBREW_EXCLUDED_PACKAGES = {"sanka-migrate"}
+
+
 def _resolve_resources_for_environment(
     direct_dependencies: tuple[LockedDependency, ...],
     locked_packages: dict[str, LockedPackage],
@@ -107,10 +115,11 @@ def _resolve_resources_for_environment(
         dependency.name
         for dependency in direct_dependencies
         if _marker_matches(dependency.marker, environment)
+        and dependency.name not in HOMEBREW_EXCLUDED_PACKAGES
     ]
     while pending:
         package_name = pending.pop()
-        if package_name in resolved:
+        if package_name in resolved or package_name in HOMEBREW_EXCLUDED_PACKAGES:
             continue
         package = locked_packages.get(package_name)
         if package is None:

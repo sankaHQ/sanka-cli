@@ -26,7 +26,6 @@ environment, or as its own tool on PATH). No API token is required for local
 migration runs.
 
 ```bash
-uv tool install sanka-migrate   # once
 sanka scan .
 sanka plan . --to fastapi
 sanka apply --to fastapi
@@ -36,18 +35,12 @@ sanka verify --to fastapi
 Also delegated: `validate`, `status`, `migrate`, `connect`, `research`,
 `assess`.
 
-Both packages currently ship a `sanka` script, so install them as separate
-tools, in one of two orders:
-
-- **Homebrew CLI** (recommended): `brew install sankaHQ/cli/sanka`, then
-  `uv tool install sanka-migrate`. Keep Homebrew's bin ahead of `~/.local/bin`
-  in PATH.
-- **uv only**: `uv tool install sanka-migrate` first, then
-  `uv tool install sanka-cli --force` (sanka-cli takes the `sanka` name;
-  delegation finds sanka-migrate via its own alias).
-
-Do not install both into one shared virtualenv — the last install wins the
-`sanka` script.
+PyPI installs of sanka-cli 0.1.7+ bundle the engine as a dependency, so the
+commands work after a single `uv tool install sanka-cli` (or `pip install
+sanka-cli`). The Homebrew formula does not bundle it; add the engine with
+`uv tool install sanka-migrate` and `sanka` delegates to the `sanka-migrate`
+binary on PATH. The `sanka-migrate` command remains available for scripts that
+want to name the migration tool explicitly.
 
 ## CRM
 
