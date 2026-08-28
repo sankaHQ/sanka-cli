@@ -32,8 +32,8 @@ sanka apply --to fastapi
 sanka verify --to fastapi
 ```
 
-Also delegated: `validate`, `status`, `migrate`, `connect`, `research`,
-`assess`.
+Also delegated: `validate`, `test`, `status`, `migrate`, `connect`,
+`research`, `assess`.
 
 PyPI installs of sanka-cli 0.1.7+ bundle the engine as a dependency, so the
 commands work after a single `uv tool install sanka-cli` (or `pip install
