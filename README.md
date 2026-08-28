@@ -64,13 +64,17 @@ sanka auth login --access-token "<ACCESS_TOKEN>"
 `sanka` also fronts the Sanka migration engine: `scan`, `plan`, `validate`,
 `apply`, `verify`, `status`, `migrate`, `connect`, `research`, and `assess`
 are delegated to the `sanka-migrate` package when it is available (in the same
-environment or as its own tool on PATH). Install it once and the commands just
-work — no API token needed for local migration runs:
+environment or as its own tool on PATH). With the Homebrew CLI, install it once
+and the commands just work — no API token needed for local migration runs:
 
 ```bash
 uv tool install sanka-migrate
 sanka scan .
 ```
+
+Installing both with uv? Install `sanka-migrate` first, then
+`uv tool install sanka-cli --force` — both packages ship a `sanka` script, and
+sanka-cli should own it. See `docs/commands.md` for details.
 
 Check the active profile:
 
