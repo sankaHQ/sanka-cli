@@ -18,6 +18,26 @@ sanka profiles list
 sanka profiles use prod
 ```
 
+## Migration (delegated to sanka-migrate)
+
+The migration lifecycle is provided by the `sanka-migrate` package; `sanka`
+delegates these commands to it automatically when it is installed (same
+environment, or as its own tool on PATH). No API token is required for local
+migration runs.
+
+```bash
+uv tool install sanka-migrate   # once
+sanka scan .
+sanka plan . --to fastapi
+sanka apply --to fastapi
+sanka verify --to fastapi
+```
+
+Also delegated: `validate`, `status`, `migrate`, `connect`, `research`,
+`assess`. Install the two tools separately (as above) rather than into one
+shared virtualenv — both packages currently ship a `sanka` script, and in a
+shared environment the last install wins.
+
 ## CRM
 
 ```bash

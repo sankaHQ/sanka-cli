@@ -59,6 +59,19 @@ a warning so offline setup still works.
 sanka auth login --access-token "<ACCESS_TOKEN>"
 ```
 
+## Migration commands
+
+`sanka` also fronts the Sanka migration engine: `scan`, `plan`, `validate`,
+`apply`, `verify`, `status`, `migrate`, `connect`, `research`, and `assess`
+are delegated to the `sanka-migrate` package when it is available (in the same
+environment or as its own tool on PATH). Install it once and the commands just
+work — no API token needed for local migration runs:
+
+```bash
+uv tool install sanka-migrate
+sanka scan .
+```
+
 Check the active profile:
 
 ```bash
