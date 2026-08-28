@@ -34,9 +34,20 @@ sanka verify --to fastapi
 ```
 
 Also delegated: `validate`, `status`, `migrate`, `connect`, `research`,
-`assess`. Install the two tools separately (as above) rather than into one
-shared virtualenv — both packages currently ship a `sanka` script, and in a
-shared environment the last install wins.
+`assess`.
+
+Both packages currently ship a `sanka` script, so install them as separate
+tools, in one of two orders:
+
+- **Homebrew CLI** (recommended): `brew install sankaHQ/cli/sanka`, then
+  `uv tool install sanka-migrate`. Keep Homebrew's bin ahead of `~/.local/bin`
+  in PATH.
+- **uv only**: `uv tool install sanka-migrate` first, then
+  `uv tool install sanka-cli --force` (sanka-cli takes the `sanka` name;
+  delegation finds sanka-migrate via its own alias).
+
+Do not install both into one shared virtualenv — the last install wins the
+`sanka` script.
 
 ## CRM
 
