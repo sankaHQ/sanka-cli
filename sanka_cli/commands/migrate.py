@@ -14,6 +14,7 @@ MIGRATION_COMMANDS: dict[str, str] = {
     "plan": "inspect source/target and produce a reviewable plan",
     "validate": "validate sampled source records against the plan without writing",
     "apply": "execute the reviewed plan (resumable)",
+    "test": "generate and run unit tests for the created FastAPI app",
     "verify": "verify the target against the source and ledger",
     "status": "show run status and ledger counts",
     "migrate": "plan + apply + verify in one go",

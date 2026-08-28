@@ -62,7 +62,7 @@ sanka auth login --access-token "<ACCESS_TOKEN>"
 ## Migration commands
 
 `sanka` also fronts the Sanka migration engine: `scan`, `plan`, `validate`,
-`apply`, `verify`, `status`, `migrate`, `connect`, `research`, and `assess`
+`apply`, `test`, `verify`, `status`, `migrate`, `connect`, `research`, and `assess`
 are delegated to the `sanka-migrate` package. PyPI installs of sanka-cli
 0.1.7+ bundle the engine, so the commands just work — no API token needed for
 local migration runs:
