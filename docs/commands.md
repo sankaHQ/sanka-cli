@@ -30,7 +30,7 @@ Migration API:
 
 ```bash
 sanka plan --program program_001
-sanka apply --program program_001 --migration migration_001
+sanka apply --program program_001
 sanka status --program program_001
 sanka pause --migration migration_001
 sanka resume --migration migration_001

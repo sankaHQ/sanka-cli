@@ -73,7 +73,7 @@ Plan and apply a Program in Sanka Cloud:
 
 ```bash
 sanka plan --program program_001
-sanka apply --program program_001 --migration migration_001
+sanka apply --program program_001
 sanka status --program program_001
 ```
 
