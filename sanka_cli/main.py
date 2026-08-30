@@ -3,7 +3,7 @@ from __future__ import annotations
 import click
 
 from sanka_cli.commands.ai import ai
-from sanka_cli.commands.auth import auth
+from sanka_cli.commands.auth import auth, auth_login, auth_logout, auth_status
 from sanka_cli.commands.code import code
 from sanka_cli.commands.migrate import register_migration_passthroughs
 from sanka_cli.commands.profiles import profiles
@@ -33,6 +33,9 @@ def cli(
 
 
 cli.add_command(auth)
+cli.add_command(auth_login, "login")
+cli.add_command(auth_logout, "logout")
+cli.add_command(auth_status, "whoami")
 cli.add_command(profiles)
 cli.add_command(workflows)
 cli.add_command(ai)

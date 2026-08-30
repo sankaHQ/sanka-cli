@@ -35,4 +35,4 @@ else
 fi
 
 echo "Installed from $INSTALLED_SPEC"
-echo "Run: sanka auth login --access-token '<ACCESS_TOKEN>' --refresh-token '<REFRESH_TOKEN>'"
+echo "Run: sanka login --access-token '<ACCESS_TOKEN>'"

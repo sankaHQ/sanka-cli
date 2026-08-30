@@ -103,7 +103,7 @@ def build_client(state: CLIState) -> SankaApiClient:
     access_token = runtime["access_token"]
     if not access_token:
         raise click.ClickException(
-            "No access token configured. Run `sanka auth login` first."
+            "No access token configured. Run `sanka login` first."
         )
 
     return SankaApiClient(
@@ -127,6 +127,7 @@ def request_json(
     *,
     params: dict[str, Any] | None = None,
     json_body: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     client = build_client(state)
     try:
@@ -135,6 +136,7 @@ def request_json(
             path,
             params=params,
             json_body=json_body,
+            headers=headers,
         )
     except APIError as exc:
         handle_api_error(exc)
