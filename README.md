@@ -1,6 +1,7 @@
 # Sanka CLI
 
-Thin command-line wrapper for Sanka's public CRM and AI API.
+One command-line entry point for Sanka's hosted APIs and optional local
+migration runtime.
 
 The CLI keeps business logic on the server. It handles:
 - Developer API token auth and refresh
@@ -56,29 +57,49 @@ rejected token is not saved. If the API is unreachable, the token is saved with
 a warning so offline setup still works.
 
 ```bash
-sanka auth login --access-token "<ACCESS_TOKEN>"
+sanka login --access-token "<ACCESS_TOKEN>"
 ```
+
+`sanka auth login` remains an alias for existing scripts.
 
 ## Migration commands
 
-`sanka` also fronts the Sanka migration engine: `scan`, `plan`, `validate`,
-`apply`, `test`, `verify`, `status`, `migrate`, `connect`, `research`, and `assess`
-are delegated to the `sanka-migrate` package. PyPI installs of sanka-cli
-0.1.7+ bundle the engine, so the commands just work — no API token needed for
-local migration runs:
+The same lifecycle verbs select their backend from the command arguments:
+
+- `--program` or `--migration` uses Sanka Cloud through the hosted API.
+- no cloud selector delegates to the optional `sanka-migrate` local runtime.
+
+Plan and apply a Program in Sanka Cloud:
+
+```bash
+sanka plan --program program_001
+sanka apply --program program_001
+sanka status --program program_001
+```
+
+Cloud apply fetches the current reviewable plan and submits its exact plan hash.
+It asks for confirmation unless `--yes` is supplied. If a Program has more than
+one migration, the CLI requires `--migration`; it never guesses which run to
+execute. Cloud lifecycle controls also include `pause`, `resume`, `repair`,
+`verify`, `review`, and `cancel`.
+
+The base CLI deliberately does not install the local engine or connector
+providers. For local code or data migration, install `sanka-migrate` separately;
+`sanka` discovers it on `PATH`:
 
 ```bash
 uv tool install sanka-cli
+uv tool install sanka-migrate
 sanka scan .
 ```
 
-The Homebrew formula stays lean and does not bundle the engine; add it with
-`uv tool install sanka-migrate` and `sanka` delegates to it on PATH.
+Local migration needs no Sanka API token. The explicit `sanka-migrate` command
+also remains available for automation that wants to name the runtime directly.
 
 Check the active profile:
 
 ```bash
-sanka auth status
+sanka whoami
 ```
 
 ## Command Areas

@@ -85,6 +85,167 @@ def test_migration_commands_do_not_collide_with_api_commands() -> None:
     assert set(MIGRATION_COMMANDS).isdisjoint(api_commands)
 
 
+def test_cloud_plan_creates_first_program_migration_and_waits(
+    runner: CliRunner, monkeypatch
+) -> None:
+    calls: list[tuple[str, str, dict]] = []
+    responses = iter(
+        [
+            {"data": {"id": "program-1", "migration_ids": []}},
+            {"data": {"id": "migration-1", "status": "created"}},
+            {"data": {"id": "migration-1", "status": "planning"}},
+            {
+                "data": {
+                    "id": "migration-1",
+                    "status": "requires_approval",
+                }
+            },
+            {
+                "data": {
+                    "migration_id": "migration-1",
+                    "plan_hash": "sha256:plan-1",
+                    "risk_level": "low",
+                    "summary": {"records_estimated": 12},
+                }
+            },
+        ]
+    )
+
+    def fake_request(_state, method, path, **kwargs):
+        calls.append((method, path, kwargs))
+        return next(responses)
+
+    monkeypatch.setattr("sanka_cli.runtime.request_json", fake_request)
+    result = runner.invoke(
+        cli,
+        ["--output", "json", "plan", "--program", "program-1"],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["plan"]["plan_hash"] == "sha256:plan-1"
+    assert payload["next"] == (
+        "sanka apply --program program-1 --migration migration-1"
+    )
+    assert calls == [
+        ("GET", "/v2/migrate/programs/program-1", {}),
+        (
+            "POST",
+            "/v2/migrate/programs/program-1/migrations",
+            {"json_body": {}},
+        ),
+        (
+            "POST",
+            "/v2/migrate/migrations/migration-1/plan",
+            {"json_body": {"sample_size": 10, "force": False}},
+        ),
+        ("GET", "/v2/migrate/migrations/migration-1", {}),
+        ("GET", "/v2/migrate/migrations/migration-1/plan", {}),
+    ]
+
+
+def test_cloud_apply_binds_current_plan_hash(runner: CliRunner, monkeypatch) -> None:
+    calls: list[tuple[str, str, dict]] = []
+    responses = iter(
+        [
+            {"data": {"id": "program-1", "migration_ids": ["migration-1"]}},
+            {
+                "data": {
+                    "id": "migration-1",
+                    "status": "requires_approval",
+                }
+            },
+            {
+                "data": {
+                    "migration_id": "migration-1",
+                    "plan_hash": "sha256:plan-1",
+                }
+            },
+            {"data": {"id": "migration-1", "status": "applying"}},
+        ]
+    )
+
+    def fake_request(_state, method, path, **kwargs):
+        calls.append((method, path, kwargs))
+        return next(responses)
+
+    monkeypatch.setattr("sanka_cli.runtime.request_json", fake_request)
+    result = runner.invoke(
+        cli,
+        [
+            "--output",
+            "json",
+            "apply",
+            "--program",
+            "program-1",
+            "--yes",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["migration"]["status"] == "applying"
+    method, path, kwargs = calls[-1]
+    assert (method, path) == (
+        "POST",
+        "/v2/migrate/migrations/migration-1/apply",
+    )
+    assert kwargs["json_body"] == {"plan_hash": "sha256:plan-1"}
+    assert kwargs["headers"]["Idempotency-Key"].startswith("sanka-cli-")
+
+
+def test_cloud_program_with_multiple_migrations_requires_selector(
+    runner: CliRunner, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "sanka_cli.runtime.request_json",
+        lambda *_args, **_kwargs: {
+            "data": {
+                "id": "program-1",
+                "migration_ids": ["migration-1", "migration-2"],
+            }
+        },
+    )
+
+    result = runner.invoke(cli, ["apply", "--program", "program-1", "--yes"])
+
+    assert result.exit_code == 1
+    assert "multiple migrations" in result.output
+    assert "--migration" in result.output
+
+
+def test_cloud_status_program_reads_all_linked_migrations(
+    runner: CliRunner, monkeypatch
+) -> None:
+    def fake_request(_state, _method, path, **_kwargs):
+        if path.endswith("/programs/program-1"):
+            return {
+                "data": {
+                    "id": "program-1",
+                    "migration_ids": ["migration-1", "migration-2"],
+                }
+            }
+        migration_id = path.rsplit("/", 1)[-1]
+        return {"data": {"id": migration_id, "status": "applied"}}
+
+    monkeypatch.setattr("sanka_cli.runtime.request_json", fake_request)
+    result = runner.invoke(
+        cli,
+        ["--output", "json", "status", "--program", "program-1"],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert [item["id"] for item in payload["migrations"]] == [
+        "migration-1",
+        "migration-2",
+    ]
+
+
+def test_top_level_auth_aliases_are_registered() -> None:
+    assert {"login", "logout", "whoami"} <= set(cli.commands)
+
+
 def test_version_matches_pyproject() -> None:
     import tomllib
     from pathlib import Path

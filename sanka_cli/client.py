@@ -112,12 +112,15 @@ class SankaApiClient:
         *,
         params: dict[str, Any] | None = None,
         json_body: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
         allow_refresh: bool = True,
     ) -> dict[str, Any]:
+        request_headers = self._headers()
+        request_headers.update(headers or {})
         response = self.client.request(
             method.upper(),
             path,
-            headers=self._headers(),
+            headers=request_headers,
             params=params,
             json=json_body,
         )
