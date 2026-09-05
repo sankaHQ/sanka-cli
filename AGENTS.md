@@ -1,35 +1,18 @@
-# sanka-cli Agent Guide
+# Historical Sanka CLI source
 
-Canonical agent instructions for this repo — `CLAUDE.md` symlinks here. Workspace-wide
-rules and the repo map live in the sanka-project workspace repo (`../AGENTS.md`).
+This repository retains the pre-0.2 CLI and its release history. The maintained
+`sanka-cli` package is owned by `sankaHQ/sanka`; the Homebrew formula is owned by
+`sankaHQ/homebrew-cli`. See `docs/release.md` for verified publishing ownership.
 
-## What this is
+Do not restore a publisher or add product features here. Preserve historical
+release artifacts. Any remaining compatibility fixes must keep business logic
+on the server and contain no credentials or customer data.
 
-Public command-line interface for Sanka — a thin wrapper over the public CRM and AI
-API. Business logic stays on the server; the CLI handles developer API token auth and
-refresh, local profile/config management, request construction, table/JSON output, and
-polling for long-running workflow runs.
+For historical-source verification:
 
-## Stack & layout
-
-- Python ≥3.11, click + httpx + rich; keyring for token storage, platformdirs for config paths.
-- Package `sanka_cli/`, tests in `tests/`, packaging assets in `packaging/`, install script at `scripts/install.sh`.
-- Published to PyPI as `sanka-cli`; installable via `uv tool install sanka-cli` or the bootstrap script.
-
-## Commands
-
-```bash
-uv sync
+```sh
+uv sync --frozen
 uv run -- python -m pytest tests/ -q
-uv run sanka --help
 ```
 
-## Release flow
-
-1. Bump `version` in `pyproject.toml`, tag and create a GitHub Release with the sdist (`sanka_cli-<ver>.tar.gz`).
-2. Update the Homebrew tap: `../homebrew-cli/Formula/sanka.rb` pins the release `url` + `sha256` (plus vendored resource blocks) — it must be updated after every release or `brew install sankaHQ/cli/sanka` ships the old version.
-
-## Gotchas
-
-- Keep it thin: if a feature needs business logic, it belongs in the server API, not here.
-- This repo is public — no internal URLs, workspace paths, or credentials in code, docs, or fixtures.
+Workspace-wide rules apply from the parent `sanka-project` repository.

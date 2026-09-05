@@ -1,29 +1,18 @@
-# Release
+# Publishing ownership
 
-This repository is the public source for the `sanka` CLI. Tagged releases build the
-Python distributions, run tests, and generate the Homebrew formula from the release
-artifact checksum.
+`sanka-cli` 0.2.3 and later are published by `sankaHQ/sanka` through `publish.yml`
+and its protected `pypi` environment. Verify this against the package's
+[PyPI provenance](https://pypi.org/integrity/sanka-cli/0.2.3/sanka_cli-0.2.3.tar.gz/provenance).
 
-## Release Flow
+This repository must not publish new Python packages or Homebrew release assets.
+The old release workflow and formula generator have been removed. Historical
+GitHub release artifacts remain available for reproducibility.
 
-1. Update `sanka_cli/__init__.py` and `pyproject.toml` to the release version.
-2. Create and push a tag such as `v0.1.0`.
-3. GitHub Actions builds the sdist and wheel, runs Ruff and pytest, and attaches the
-   artifacts to the GitHub release.
-4. The release workflow renders `packaging/homebrew/sanka.rb` with the exact checksum
-   for the tagged sdist and uploads that formula as a release artifact.
-5. Copy the generated formula into `sankaHQ/homebrew-cli`.
-6. Publish to PyPI when the repository has a configured `PYPI_API_TOKEN`.
+The [Homebrew tap](https://github.com/sankaHQ/homebrew-cli) pins the PyPI source
+archive and checksum and owns its formula.
 
-## Homebrew Formula
-
-The formula in this repo is generated, not hand-maintained. Re-render it locally with:
-
-```bash
-uv run python scripts/render_homebrew_formula.py \
-  --version 0.1.0 \
-  --sha256 <sha256-of-sanka_cli-0.1.0.tar.gz> \
-  --output packaging/homebrew/sanka.rb
-```
-
-The formula points at the GitHub release asset for the matching version.
+Before archiving this repository, merge and verify the Homebrew cutover and
+remove the old PyPI trusted publisher tuple (`sankaHQ/sanka-cli`, `release.yml`,
+`pypi`) from the project's publishing settings. Retain the current publisher
+(`sankaHQ/sanka`, `publish.yml`, `pypi`). Removing a workflow from the default
+branch alone does not revoke the trust granted to historical refs.
